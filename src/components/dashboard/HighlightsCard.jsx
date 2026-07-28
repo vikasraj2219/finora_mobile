@@ -1,19 +1,19 @@
 import { View, StyleSheet } from 'react-native';
-import { Text, Divider } from 'react-native-paper';
-import { brand } from '../../theme/theme';
+import { Text, Surface, Divider } from 'react-native-paper';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { brand } from '../../theme/theme';
 
 const Row = ({ label, value, sub }) => (
   <View style={styles.row}>
-    <Text variant="bodyMedium" style={styles.rowLabel}>
+    <Text variant="bodyMedium" style={styles.label}>
       {label}
     </Text>
-    <View style={{ alignItems: 'flex-end', flexShrink: 1, marginLeft: 12 }}>
-      <Text variant="bodyMedium" style={styles.rowValue} numberOfLines={1}>
+    <View style={{ alignItems: 'flex-end', flexShrink: 1 }}>
+      <Text variant="bodyMedium" style={styles.value} numberOfLines={1}>
         {value}
       </Text>
       {sub && (
-        <Text variant="bodySmall" style={styles.rowSub} numberOfLines={1}>
+        <Text variant="labelSmall" style={styles.sub} numberOfLines={1}>
           {sub}
         </Text>
       )}
@@ -23,11 +23,11 @@ const Row = ({ label, value, sub }) => (
 
 // Mirrors frontend/src/components/dashboard/HighlightsCard.jsx
 const HighlightsCard = ({ summary }) => (
-  <View style={styles.card}>
-    <Text variant="titleMedium" style={styles.heading}>
+  <Surface style={styles.card} elevation={1}>
+    <Text variant="titleMedium" style={styles.title}>
       Highlights
     </Text>
-    <Divider style={{ marginBottom: 4 }} />
+    <Divider style={{ marginVertical: 8 }} />
     <Row label="Today's Spending" value={formatCurrency(summary.todaySpending)} />
     <Row
       label="Expense Ratio"
@@ -67,25 +67,16 @@ const HighlightsCard = ({ summary }) => (
           : undefined
       }
     />
-  </View>
+  </Surface>
 );
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: brand.paper,
-    borderRadius: 12,
-    padding: 14,
-    shadowColor: '#0B2643',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  heading: { fontWeight: '700', color: brand.navy, marginBottom: 4 },
+  card: { borderRadius: 12, padding: 16, backgroundColor: '#FFFFFF' },
+  title: { fontWeight: '700', color: brand.navy },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
-  rowLabel: { color: '#64748B', flexShrink: 1 },
-  rowValue: { fontWeight: '600', color: brand.navy },
-  rowSub: { color: '#94A3B8' },
+  label: { color: '#64748B', flexShrink: 1, marginRight: 8 },
+  value: { fontWeight: '600' },
+  sub: { color: '#94A3B8' },
 });
 
 export default HighlightsCard;

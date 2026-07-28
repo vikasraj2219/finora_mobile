@@ -2,7 +2,6 @@
   "expo": {
     "name": "Finora",
     "slug": "finora-mobile",
-    "owner": "vikaszd",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo-mark.png",
@@ -12,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finora.personal"
@@ -26,14 +23,6 @@
       },
       "package": "com.finora.personal",
       "versionCode": 1
-    },
-    "extra": {
-      "eas": {
-        "projectId": "ed594795-63bf-4b6b-89e7-efd49f0f704b"
-      }
-    },
-    "plugins": [
-      "expo-font"
-    ]
+    }
   }
 }

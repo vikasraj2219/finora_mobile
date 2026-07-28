@@ -1,59 +1,71 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { View, ScrollView, StyleSheet } from 'react-native';
-import { Portal, Dialog, TextInput, Button, HelperText } from 'react-native-paper';
-import SelectField from '../common/SelectField';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Text, TextInput, Menu, Portal, Dialog, Button } from 'react-native-paper';
 import { brand } from '../../theme/theme';
 
-const ACCOUNT_TYPES = ['savings', 'current', 'salary', 'other'].map((t) => ({
-  label: t.charAt(0).toUpperCase() + t.slice(1),
-  value: t,
-}));
-
-const DEFAULTS = { bankName: '', accountNickname: '', accountNumberLast4: '', accountType: 'savings', openingBalance: '0' };
+const ACCOUNT_TYPES = ['savings', 'current', 'salary', 'other'];
 
 // Mirrors frontend/src/components/accounts/BankAccountFormDialog.jsx
-const BankAccountFormDialog = ({ visible, onDismiss, onSubmit, initialValues }) => {
+const BankAccountFormDialog = ({ open, onClose, onSubmit, initialValues }) => {
   const isEdit = Boolean(initialValues);
+  const [typeMenuOpen, setTypeMenuOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const {
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
-  } = useForm({ defaultValues: DEFAULTS });
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      bankName: '',
+      accountNickname: '',
+      accountNumberLast4: '',
+      accountType: 'savings',
+      openingBalance: '0',
+    },
+  });
 
   useEffect(() => {
-    if (visible) {
+    if (open) {
       reset(
         initialValues
-          ? { ...DEFAULTS, ...initialValues, openingBalance: String(initialValues.openingBalance ?? 0) }
-          : DEFAULTS
+          ? { ...initialValues, openingBalance: String(initialValues.openingBalance ?? 0) }
+          : { bankName: '', accountNickname: '', accountNumberLast4: '', accountType: 'savings', openingBalance: '0' }
       );
     }
-  }, [visible, initialValues, reset]);
+  }, [open, initialValues, reset]);
 
   const submitHandler = async (values) => {
-    await onSubmit({ ...values, openingBalance: Number(values.openingBalance) || 0 });
+    setSubmitting(true);
+    try {
+      await onSubmit({ ...values, openingBalance: Number(values.openingBalance) || 0 });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <Portal>
-      <Dialog visible={visible} onDismiss={onDismiss} style={styles.dialog}>
+      <Dialog visible={open} onDismiss={onClose} style={styles.dialog}>
         <Dialog.Title>{isEdit ? 'Edit Bank Account' : 'Add Bank Account'}</Dialog.Title>
-        <Dialog.Content>
-          <ScrollView keyboardShouldPersistTaps="handled">
+        <Dialog.ScrollArea style={{ maxHeight: 420 }}>
+          <ScrollView contentContainerStyle={{ paddingVertical: 8 }}>
             <Controller
               control={control}
               name="bankName"
               rules={{ required: 'Bank name is required' }}
               render={({ field: { onChange, value } }) => (
-                <TextInput label="Bank Name" value={value} onChangeText={onChange} mode="outlined" error={!!errors.bankName} style={styles.input} />
+                <TextInput
+                  label="Bank Name"
+                  value={value}
+                  onChangeText={onChange}
+                  mode="outlined"
+                  error={!!errors.bankName}
+                  style={styles.input}
+                />
               )}
             />
-            <HelperText type="error" visible={!!errors.bankName}>
-              {errors.bankName?.message}
-            </HelperText>
-
             <Controller
               control={control}
               name="accountNickname"
@@ -62,28 +74,51 @@ const BankAccountFormDialog = ({ visible, onDismiss, onSubmit, initialValues }) 
               )}
             />
 
-            <View style={{ marginTop: 8 }}>
-              <Controller
-                control={control}
-                name="accountType"
-                render={({ field: { onChange, value } }) => (
-                  <SelectField label="Account Type" value={value} options={ACCOUNT_TYPES} onSelect={onChange} />
-                )}
-              />
-            </View>
+            <Controller
+              control={control}
+              name="accountType"
+              render={({ field: { onChange, value } }) => (
+                <Menu
+                  visible={typeMenuOpen}
+                  onDismiss={() => setTypeMenuOpen(false)}
+                  anchor={
+                    <TextInput
+                      label="Account Type"
+                      value={value.charAt(0).toUpperCase() + value.slice(1)}
+                      mode="outlined"
+                      editable={false}
+                      onPressIn={() => setTypeMenuOpen(true)}
+                      right={<TextInput.Icon icon="menu-down" onPress={() => setTypeMenuOpen(true)} />}
+                      style={styles.input}
+                    />
+                  }
+                >
+                  {ACCOUNT_TYPES.map((t) => (
+                    <Menu.Item
+                      key={t}
+                      title={t.charAt(0).toUpperCase() + t.slice(1)}
+                      onPress={() => {
+                        onChange(t);
+                        setTypeMenuOpen(false);
+                      }}
+                    />
+                  ))}
+                </Menu>
+              )}
+            />
 
             <Controller
               control={control}
               name="accountNumberLast4"
               render={({ field: { onChange, value } }) => (
                 <TextInput
-                  label="Last 4 Digits (optional)"
+                  label="Last 4 Digits"
                   value={value}
                   onChangeText={onChange}
                   mode="outlined"
                   keyboardType="number-pad"
-                  maxLength={6}
-                  style={[styles.input, { marginTop: 8 }]}
+                  maxLength={4}
+                  style={styles.input}
                 />
               )}
             />
@@ -94,23 +129,23 @@ const BankAccountFormDialog = ({ visible, onDismiss, onSubmit, initialValues }) 
               render={({ field: { onChange, value } }) => (
                 <TextInput
                   label={isEdit ? 'Opening Balance (locked)' : 'Opening Balance'}
-                  value={value}
+                  value={String(value)}
                   onChangeText={onChange}
                   mode="outlined"
                   keyboardType="numeric"
                   disabled={isEdit}
-                  style={[styles.input, { marginTop: 8 }]}
+                  style={styles.input}
                 />
               )}
             />
           </ScrollView>
-        </Dialog.Content>
+        </Dialog.ScrollArea>
         <Dialog.Actions>
-          <Button onPress={onDismiss} disabled={isSubmitting}>
+          <Button onPress={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button mode="contained" onPress={handleSubmit(submitHandler)} loading={isSubmitting} disabled={isSubmitting}>
-            {isEdit ? 'Save Changes' : 'Add Account'}
+          <Button onPress={handleSubmit(submitHandler)} loading={submitting} disabled={submitting} mode="contained">
+            {isEdit ? 'Save' : 'Add'}
           </Button>
         </Dialog.Actions>
       </Dialog>
@@ -119,8 +154,8 @@ const BankAccountFormDialog = ({ visible, onDismiss, onSubmit, initialValues }) 
 };
 
 const styles = StyleSheet.create({
-  dialog: { backgroundColor: brand.paper, maxHeight: '85%' },
-  input: { backgroundColor: '#FFFFFF' },
+  dialog: { backgroundColor: '#FFFFFF' },
+  input: { marginBottom: 12, backgroundColor: '#FFFFFF' },
 });
 
 export default BankAccountFormDialog;

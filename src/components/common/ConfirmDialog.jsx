@@ -1,30 +1,16 @@
-import { Portal, Dialog, Text, Button } from 'react-native-paper';
-import { brand } from '../../theme/theme';
+import { Portal, Dialog, Button, Text } from 'react-native-paper';
 
 // Mirrors frontend/src/components/common/ConfirmDialog.jsx
-const ConfirmDialog = ({
-  visible,
-  title = 'Are you sure?',
-  description,
-  confirmLabel = 'Confirm',
-  confirmColor = brand.error,
-  loading = false,
-  onConfirm,
-  onDismiss,
-}) => (
+const ConfirmDialog = ({ open, title, description, confirmLabel = 'Confirm', onClose, onConfirm }) => (
   <Portal>
-    <Dialog visible={visible} onDismiss={onDismiss}>
+    <Dialog visible={open} onDismiss={onClose}>
       <Dialog.Title>{title}</Dialog.Title>
-      {description && (
-        <Dialog.Content>
-          <Text variant="bodyMedium">{description}</Text>
-        </Dialog.Content>
-      )}
+      <Dialog.Content>
+        <Text variant="bodyMedium">{description}</Text>
+      </Dialog.Content>
       <Dialog.Actions>
-        <Button onPress={onDismiss} disabled={loading}>
-          Cancel
-        </Button>
-        <Button onPress={onConfirm} loading={loading} disabled={loading} textColor={confirmColor}>
+        <Button onPress={onClose}>Cancel</Button>
+        <Button onPress={onConfirm} textColor="#EF4444">
           {confirmLabel}
         </Button>
       </Dialog.Actions>

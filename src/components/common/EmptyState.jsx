@@ -3,11 +3,10 @@ import { Text, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { brand } from '../../theme/theme';
 
-// Mirrors frontend/src/components/common/EmptyState.jsx
-const EmptyState = ({ icon = 'information-outline', title, description, actionLabel, onAction }) => (
+const EmptyState = ({ icon = 'tray-outline', title, description, actionLabel, onAction }) => (
   <View style={styles.container}>
     <View style={styles.iconWrap}>
-      <MaterialCommunityIcons name={icon} size={26} color="#64748B" />
+      <MaterialCommunityIcons name={icon} size={32} color={brand.navy} />
     </View>
     <Text variant="titleMedium" style={styles.title}>
       {title}
@@ -18,7 +17,7 @@ const EmptyState = ({ icon = 'information-outline', title, description, actionLa
       </Text>
     )}
     {actionLabel && onAction && (
-      <Button mode="contained" onPress={onAction} style={styles.action}>
+      <Button mode="contained" onPress={onAction} style={{ marginTop: 16 }}>
         {actionLabel}
       </Button>
     )}
@@ -26,19 +25,18 @@ const EmptyState = ({ icon = 'information-outline', title, description, actionLa
 );
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, paddingHorizontal: 24 },
+  container: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24 },
   iconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#EEF2F6',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(11,38,67,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   title: { fontWeight: '700', color: brand.navy, textAlign: 'center' },
-  description: { color: '#64748B', textAlign: 'center', marginTop: 4, maxWidth: 320 },
-  action: { marginTop: 18, borderRadius: 8 },
+  description: { color: '#64748B', textAlign: 'center', marginTop: 4 },
 });
 
 export default EmptyState;

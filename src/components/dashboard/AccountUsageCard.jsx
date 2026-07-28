@@ -1,46 +1,55 @@
 import { View, StyleSheet } from 'react-native';
-import { Text, ProgressBar } from 'react-native-paper';
-import ChartCard from './ChartCard';
-import { brand } from '../../theme/theme';
+import { Text, Surface } from 'react-native-paper';
 import { formatCurrency } from '../../utils/formatters';
+import { brand } from '../../theme/theme';
 
-const UsageBar = ({ label, count, total, max }) => (
-  <View style={styles.row}>
-    <View style={styles.rowHeader}>
-      <Text variant="bodyMedium" style={styles.label} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text variant="bodySmall" style={styles.meta}>
-        {count} txns · {formatCurrency(total)}
-      </Text>
-    </View>
-    <ProgressBar progress={max > 0 ? total / max : 0} color={brand.teal} style={styles.bar} />
-  </View>
-);
-
-// Mirrors frontend/src/components/dashboard/AccountUsageCard.jsx — shared by both
-// Bank-wise and UPI-wise usage cards, `items` is whichever list is passed in.
+// Mirrors frontend/src/components/dashboard/AccountUsageCard.jsx
 const AccountUsageCard = ({ title, items }) => {
-  const max = Math.max(...items.map((i) => i.total), 1);
+  const max = Math.max(1, ...items.map((i) => i.total));
 
   return (
-    <ChartCard title={title}>
+    <Surface style={styles.card} elevation={1}>
+      <Text variant="titleMedium" style={styles.title}>
+        {title}
+      </Text>
       {items.length === 0 ? (
-        <Text style={styles.empty}>No usage data yet.</Text>
+        <Text variant="bodyMedium" style={styles.empty}>
+          No usage yet
+        </Text>
       ) : (
-        items.map((item) => <UsageBar key={item.id} label={item.name} count={item.count} total={item.total} max={max} />)
+        items.slice(0, 6).map((i) => (
+          <View key={i.id} style={styles.row}>
+            <View style={styles.rowHeader}>
+              <Text variant="bodyMedium" numberOfLines={1} style={{ flexShrink: 1 }}>
+                {i.name}
+              </Text>
+              <Text variant="labelSmall" style={styles.count}>
+                {i.count} txns
+              </Text>
+            </View>
+            <View style={styles.track}>
+              <View style={[styles.fill, { width: `${(i.total / max) * 100}%` }]} />
+            </View>
+            <Text variant="labelSmall" style={styles.amount}>
+              {formatCurrency(i.total)}
+            </Text>
+          </View>
+        ))
       )}
-    </ChartCard>
+    </Surface>
   );
 };
 
 const styles = StyleSheet.create({
-  row: { marginBottom: 14 },
-  rowHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  label: { fontWeight: '600', color: brand.navy, flexShrink: 1, marginRight: 8 },
-  meta: { color: '#94A3B8' },
-  bar: { height: 7, borderRadius: 4, backgroundColor: '#EEF2F6' },
-  empty: { color: '#64748B' },
+  card: { borderRadius: 12, padding: 16, backgroundColor: '#FFFFFF', flex: 1 },
+  title: { fontWeight: '700', color: brand.navy, marginBottom: 8 },
+  empty: { color: '#94A3B8', paddingVertical: 12 },
+  row: { marginBottom: 12 },
+  rowHeader: { flexDirection: 'row', justifyContent: 'space-between' },
+  count: { color: '#94A3B8' },
+  track: { height: 6, borderRadius: 3, backgroundColor: '#F1F5F9', overflow: 'hidden', marginTop: 4 },
+  fill: { height: 6, borderRadius: 3, backgroundColor: brand.teal },
+  amount: { color: '#64748B', marginTop: 2 },
 });
 
 export default AccountUsageCard;
