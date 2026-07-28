@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finora.personal"
@@ -29,6 +31,9 @@
       "eas": {
         "projectId": "ed594795-63bf-4b6b-89e7-efd49f0f704b"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
