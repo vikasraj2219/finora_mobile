@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Finora",
+    "slug": "finora-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo-mark.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo-full.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.finora.personal"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/logo-mark.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.finora.personal",
+      "versionCode": 1
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ed594795-63bf-4b6b-89e7-efd49f0f704b"
+      }
+    }
+  }
+}
