@@ -2,6 +2,7 @@
   "expo": {
     "name": "Finora",
     "slug": "finora-mobile",
+    "owner": "vikaszd",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/logo-mark.png",
@@ -11,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.finora.personal"
