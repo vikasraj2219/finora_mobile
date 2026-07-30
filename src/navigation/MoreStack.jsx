@@ -6,6 +6,7 @@ import TypesScreen from '../screens/types/TypesScreen';
 import SubcategoriesScreen from '../screens/subcategories/SubcategoriesScreen';
 import MerchantsScreen from '../screens/merchants/MerchantsScreen';
 import ReportsScreen from '../screens/reports/ReportsScreen';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import { brand } from '../theme/theme';
 
@@ -26,6 +27,7 @@ const MoreStack = () => (
     <Stack.Screen name="Subcategories" component={SubcategoriesScreen} options={headerOptions} />
     <Stack.Screen name="Merchants" component={MerchantsScreen} options={headerOptions} />
     <Stack.Screen name="Reports" component={ReportsScreen} options={headerOptions} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} options={headerOptions} />
     <Stack.Screen name="Settings" component={SettingsScreen} options={headerOptions} />
   </Stack.Navigator>
 );

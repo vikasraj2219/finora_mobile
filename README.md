@@ -62,9 +62,26 @@ a free Apple ID registered as a development device, and re-signing every ~7 days
 you pay for the $99/yr Apple Developer Program. For iOS, using Expo Go (step 2) day-to-day
 is the frictionless option; let me know if you want the sideload route set up too.
 
+## What's built
+
+All 5 phases complete — every module from the web app now has a mobile counterpart:
+
+- **Auth** — Login, Register, JWT with auto-refresh, logout
+- **Dashboard** — stats, trends, category breakdown, cash flow, payment method split, account usage, yearly summary, highlights
+- **Accounts** — Bank / UPI / Cash, full CRUD, balance adjust
+- **Transactions** — full form (all 5 types), filters, receipt attach/view, edit/delete
+- **Allocation** — status tabs, bulk-classify, bulk-delete
+- **Types, Categories, Subcategories** — full CRUD, cascading tabs/pickers
+- **Merchants** — full CRUD with usage stats
+- **Import Statement** — 3-step wizard: pick bank + file → review/categorize → confirm
+- **Reports** — CSV/Excel/PDF export + financial summary PDF, via the native share sheet
+- **Notifications** — full list, mark read / mark all read
+- **Settings** — Profile, Security (password), Activity Log, logout
+
 ## What's next
 
-- **Phase 2** — Dashboard (stats, trends, charts) + Accounts (Bank/UPI/Cash, add/edit/adjust)
-- **Phase 3** — Transactions (list/filter/add/edit/receipts) + Allocation
-- **Phase 4** — Types, Categories, Subcategories, Merchants
-- **Phase 5** — Import Statement, Reports, Notifications, full Settings
+App is feature-complete against the current web app. Possible follow-ups if you want them later:
+- Push notifications (native, instead of only in-app list)
+- Offline caching / optimistic updates
+- Biometric login (Face ID / fingerprint) using expo-local-authentication
+- App icon / splash polish, dark mode

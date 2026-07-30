@@ -5,15 +5,16 @@ import { brand } from '../../theme/theme';
 // Mirrors the web app's hamburger-drawer pattern: bottom tabs cover the
 // thumb-reachable daily actions (Dashboard/Transactions/Accounts/Import),
 // everything else lives here — one tap further, same as the web sidebar's
-// less-frequent destinations.
+// less-frequent destinations. All screens below are now fully built (Phase 5 complete).
 const MENU = [
-  { label: 'Allocation', icon: 'checkbox-marked-outline', route: 'Allocation', phase: 'Phase 3' },
-  { label: 'Categories', icon: 'shape-outline', route: 'Categories', phase: 'Phase 4' },
-  { label: 'Types', icon: 'tune', route: 'Types', phase: 'Phase 4' },
-  { label: 'Subcategories', icon: 'file-tree-outline', route: 'Subcategories', phase: 'Phase 4' },
-  { label: 'Merchants', icon: 'store-outline', route: 'Merchants', phase: 'Phase 4' },
-  { label: 'Reports', icon: 'chart-box-outline', route: 'Reports', phase: 'Phase 5' },
-  { label: 'Settings', icon: 'cog-outline', route: 'Settings', phase: 'Phase 1' },
+  { label: 'Allocation', icon: 'checkbox-marked-outline', route: 'Allocation' },
+  { label: 'Categories', icon: 'shape-outline', route: 'Categories' },
+  { label: 'Types', icon: 'tune', route: 'Types' },
+  { label: 'Subcategories', icon: 'file-tree-outline', route: 'Subcategories' },
+  { label: 'Merchants', icon: 'store-outline', route: 'Merchants' },
+  { label: 'Reports', icon: 'chart-box-outline', route: 'Reports' },
+  { label: 'Notifications', icon: 'bell-outline', route: 'Notifications' },
+  { label: 'Settings', icon: 'cog-outline', route: 'Settings' },
 ];
 
 const MoreScreen = ({ navigation }) => (
@@ -26,7 +27,6 @@ const MoreScreen = ({ navigation }) => (
       <List.Item
         key={item.route}
         title={item.label}
-        description={item.phase !== 'Phase 1' ? `Coming in ${item.phase}` : undefined}
         left={(props) => <List.Icon {...props} icon={item.icon} color={brand.navy} />}
         right={(props) => <List.Icon {...props} icon="chevron-right" />}
         onPress={() => navigation.navigate(item.route)}
