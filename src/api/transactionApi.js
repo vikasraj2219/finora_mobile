@@ -8,9 +8,8 @@ export const deleteTransaction = (id) => axiosInstance.delete(`/transactions/${i
 export const uploadTransactionReceipt = (id, file) => {
   const formData = new FormData();
   formData.append('receipt', file);
-  return axiosInstance.post(`/transactions/${id}/receipt`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  // See importApi.js — no manual Content-Type here either, same reason.
+  return axiosInstance.post(`/transactions/${id}/receipt`, formData);
 };
 export const removeTransactionReceipt = (id) => axiosInstance.delete(`/transactions/${id}/receipt`);
 

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScrollView, View, StyleSheet, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, ActivityIndicator } from 'react-native-paper';
 
 import StatCard from '../../components/common/StatCard';
@@ -89,21 +90,21 @@ const DashboardScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <ActivityIndicator animating color={brand.teal} size="large" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[brand.teal]} />}
-    >
-      <Text variant="headlineSmall" style={styles.greeting}>
-        Welcome, {user?.name?.split(' ')[0]}
-      </Text>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[brand.teal]} />}
+      >
+        <Text variant="headlineSmall" style={styles.greeting}>
+          Welcome, {user?.name?.split(' ')[0]}
+        </Text>
       <Text variant="bodyMedium" style={styles.subGreeting}>
         Here's a snapshot of your finances
       </Text>
@@ -163,6 +164,7 @@ const DashboardScreen = () => {
       <YearlySummaryChart data={yearlyData} year={year} onYearChange={onYearChange} years={YEAR_OPTIONS} />
       <View style={{ height: 24 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 };
 

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Surface, IconButton, FAB, Menu, Chip, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button } from 'react-native-paper';
@@ -161,14 +162,14 @@ const AccountsScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer} edges={['top']}>
         <ActivityIndicator animating color={brand.teal} size="large" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <SegmentedButtons
           value={tab}
@@ -352,7 +353,7 @@ const AccountsScreen = () => {
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
