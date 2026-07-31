@@ -1,12 +1,14 @@
 import { View, StyleSheet } from 'react-native';
-import { List, Divider, Text } from 'react-native-paper';
-import { brand } from '../../theme/theme';
+import { List } from 'react-native-paper';
+import tokens from '../../theme/tokens';
 
-// Mirrors the web app's hamburger-drawer pattern: bottom tabs cover the
-// thumb-reachable daily actions (Dashboard/Transactions/Accounts/Import),
-// everything else lives here — one tap further, same as the web sidebar's
-// less-frequent destinations. All screens below are now fully built (Phase 5 complete).
+// Light-touch pass for Phase 1 (added Import Statement, since it moved out of
+// the bottom tabs into the floating Add + here) — full grouped-sections
+// redesign (Profile / Data / Preferences / Support, per brief §14) lands in
+// Phase 7 along with Settings. No in-body heading here — the Stack header
+// (MoreStack.jsx) already shows "More", so this screen is just the list.
 const MENU = [
+  { label: 'Import Statement', icon: 'file-upload-outline', route: 'Imports' },
   { label: 'Allocation', icon: 'checkbox-marked-outline', route: 'Allocation' },
   { label: 'Categories', icon: 'shape-outline', route: 'Categories' },
   { label: 'Types', icon: 'tune', route: 'Types' },
@@ -19,15 +21,11 @@ const MENU = [
 
 const MoreScreen = ({ navigation }) => (
   <View style={styles.container}>
-    <Text variant="titleMedium" style={styles.heading}>
-      More
-    </Text>
-    <Divider />
     {MENU.map((item) => (
       <List.Item
         key={item.route}
         title={item.label}
-        left={(props) => <List.Icon {...props} icon={item.icon} color={brand.navy} />}
+        left={(props) => <List.Icon {...props} icon={item.icon} color={tokens.brand.ink800} />}
         right={(props) => <List.Icon {...props} icon="chevron-right" />}
         onPress={() => navigation.navigate(item.route)}
       />
@@ -36,8 +34,7 @@ const MoreScreen = ({ navigation }) => (
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: brand.paper },
-  heading: { padding: 16, color: brand.navy, fontWeight: '700' },
+  container: { flex: 1, backgroundColor: tokens.neutral.surface, paddingTop: 8 },
 });
 
 export default MoreScreen;

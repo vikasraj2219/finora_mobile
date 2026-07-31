@@ -45,8 +45,8 @@ const emptyDefaults = {
   toBankAccount: '',
 };
 
-const toFormValues = (txn) => {
-  if (!txn) return emptyDefaults;
+const toFormValues = (txn, presetType) => {
+  if (!txn) return { ...emptyDefaults, type: presetType || emptyDefaults.type };
   return {
     type: txn.type,
     amount: String(txn.amount),
@@ -128,7 +128,7 @@ const PickerField = ({ label, value, options, onSelect, disabled }) => {
 // covering income/expense/transfer/adjustment/opening-balance, with a live allocation
 // preview badge over the Classify section. Full-screen modal rather than a small
 // dialog, since it has the most fields of anything in the app.
-const TransactionFormDialog = ({ open, onClose, onSubmit, initialValues, categories, bankAccounts, upiAccounts }) => {
+const TransactionFormDialog = ({ open, onClose, onSubmit, initialValues, presetType, categories, bankAccounts, upiAccounts }) => {
   const isEdit = Boolean(initialValues);
   const [subcategories, setSubcategories] = useState([]);
   const [submitting, setSubmitting] = useState(false);
@@ -150,8 +150,8 @@ const TransactionFormDialog = ({ open, onClose, onSubmit, initialValues, categor
   const toType = watch('toType');
 
   useEffect(() => {
-    if (open) reset(toFormValues(initialValues));
-  }, [open, initialValues, reset]);
+    if (open) reset(toFormValues(initialValues, presetType));
+  }, [open, initialValues, presetType, reset]);
 
   const loadSubcategories = useCallback(async (categoryId) => {
     if (!categoryId) {

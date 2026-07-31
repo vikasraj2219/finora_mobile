@@ -5,6 +5,7 @@ import CategoriesScreen from '../screens/categories/CategoriesScreen';
 import TypesScreen from '../screens/types/TypesScreen';
 import SubcategoriesScreen from '../screens/subcategories/SubcategoriesScreen';
 import MerchantsScreen from '../screens/merchants/MerchantsScreen';
+import ImportsScreen from '../screens/imports/ImportsScreen';
 import ReportsScreen from '../screens/reports/ReportsScreen';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
@@ -26,6 +27,7 @@ const MoreStack = () => (
     <Stack.Screen name="Types" component={TypesScreen} options={headerOptions} />
     <Stack.Screen name="Subcategories" component={SubcategoriesScreen} options={headerOptions} />
     <Stack.Screen name="Merchants" component={MerchantsScreen} options={headerOptions} />
+    <Stack.Screen name="Imports" component={ImportsScreen} options={{ ...headerOptions, title: 'Import Statement' }} />
     <Stack.Screen name="Reports" component={ReportsScreen} options={headerOptions} />
     <Stack.Screen name="Notifications" component={NotificationsScreen} options={headerOptions} />
     <Stack.Screen name="Settings" component={SettingsScreen} options={headerOptions} />

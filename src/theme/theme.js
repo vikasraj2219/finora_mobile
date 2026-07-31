@@ -1,31 +1,35 @@
 import { MD3LightTheme } from 'react-native-paper';
+import tokens from './tokens';
 
-// Mirrors frontend/src/theme/palette.js exactly — same navy + teal brand tokens.
+// Back-compat export — every Phase 1-5 screen imports `{ brand }` from this
+// file for quick colors (brand.navy, brand.teal, brand.bg, etc). Keep it
+// working by mapping the old flat names onto the new token system, so this
+// redesign doesn't require touching every existing screen's imports.
 export const brand = {
-  navy: '#0B2643',
-  navyDark: '#071A30',
-  navyLight: '#123A63',
-  teal: '#12A59D',
-  tealLight: '#3FC7BE',
-  success: '#22C55E',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
-  bg: '#F5F7FA',
-  paper: '#FFFFFF',
+  navy: tokens.brand.ink800,
+  navyDark: tokens.brand.ink900,
+  navyLight: tokens.brand.ink700,
+  teal: tokens.brand.teal500,
+  tealLight: tokens.brand.teal400,
+  success: tokens.semantic.income,
+  warning: tokens.semantic.warning,
+  error: tokens.semantic.error,
+  info: tokens.semantic.transfer,
+  bg: tokens.neutral.bg,
+  paper: tokens.neutral.surface,
 };
 
 export const theme = {
   ...MD3LightTheme,
   colors: {
     ...MD3LightTheme.colors,
-    primary: brand.navy,
+    primary: tokens.brand.ink800,
     onPrimary: '#FFFFFF',
-    secondary: brand.teal,
+    secondary: tokens.brand.teal500,
     onSecondary: '#FFFFFF',
-    background: brand.bg,
-    surface: brand.paper,
-    error: brand.error,
+    background: tokens.neutral.bg,
+    surface: tokens.neutral.surface,
+    error: tokens.semantic.error,
   },
   roundness: 3,
 };

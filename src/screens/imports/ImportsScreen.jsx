@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Button, TextInput, Menu, Surface, ActivityIndicator, Card } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -154,14 +153,14 @@ const ImportsScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer} edges={['top']}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator animating color={brand.teal} size="large" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StepIndicator activeStep={activeStep} />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -290,7 +289,7 @@ const ImportsScreen = () => {
           </Surface>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -1,41 +1,23 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import HomeScreen from '../screens/home/HomeScreen';
 import TransactionsScreen from '../screens/transactions/TransactionsScreen';
 import AccountsScreen from '../screens/accounts/AccountsScreen';
-import ImportsScreen from '../screens/imports/ImportsScreen';
+import InsightsScreen from '../screens/insights/InsightsScreen';
 import MoreStack from './MoreStack';
-import { brand } from '../theme/theme';
+import CustomTabBar from './CustomTabBar';
 
 const Tab = createBottomTabNavigator();
 
-// Same five destinations, same order, as frontend/src/components/layout/MobileBottomNav.jsx
-// — Dashboard / Transactions / Accounts / Import stay thumb-reachable; everything else
-// (Allocation, Categories, Types, Subcategories, Merchants, Reports, Settings) sits one tap
-// deeper behind "More", matching the web app's hamburger-drawer split.
-const ICONS = {
-  Dashboard: 'view-dashboard-outline',
-  Transactions: 'swap-horizontal',
-  Accounts: 'bank-outline',
-  Import: 'upload-outline',
-  More: 'dots-horizontal',
-};
-
+// Redesigned per brief §5: Home / Transactions / Accounts / Insights / More,
+// with Add as a floating center button (CustomTabBar) rather than its own
+// permanent tab slot. Import moved off the tab bar into More + the Home
+// quick-actions row, freeing a slot for the new Insights tab.
 const MainTabs = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: false,
-      tabBarActiveTintColor: brand.navy,
-      tabBarInactiveTintColor: '#94A3B8',
-      tabBarIcon: ({ color, size }) => (
-        <MaterialCommunityIcons name={ICONS[route.name]} color={color} size={size} />
-      ),
-    })}
-  >
-    <Tab.Screen name="Dashboard" component={DashboardScreen} />
+  <Tab.Navigator screenOptions={{ headerShown: false }} tabBar={(props) => <CustomTabBar {...props} />}>
+    <Tab.Screen name="Home" component={HomeScreen} />
     <Tab.Screen name="Transactions" component={TransactionsScreen} />
     <Tab.Screen name="Accounts" component={AccountsScreen} />
-    <Tab.Screen name="Import" component={ImportsScreen} />
+    <Tab.Screen name="Insights" component={InsightsScreen} />
     <Tab.Screen name="More" component={MoreStack} />
   </Tab.Navigator>
 );
