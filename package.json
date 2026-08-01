@@ -5,9 +5,8 @@
   "private": true,
   "scripts": {
     "start": "expo start",
-    "android:release": "cd android && ./gradlew assembleRelease && cd .. && open -a 'Android Studio' android",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "android": "expo start --android",
+    "ios": "expo start --ios"
   },
   "dependencies": {
     "expo": "~51.0.0",

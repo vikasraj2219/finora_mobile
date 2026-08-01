@@ -1,57 +1,44 @@
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Surface, IconButton, FAB, Chip, ActivityIndicator, Badge, Button } from 'react-native-paper';
+import { ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import EmptyState from '../../components/common/EmptyState';
+import FinoraCard from '../../components/ui/FinoraCard';
+import FinoraChip from '../../components/ui/FinoraChip';
+import FinoraEmptyState from '../../components/ui/FinoraEmptyState';
+import FinoraButton from '../../components/ui/FinoraButton';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TransactionFormDialog from '../../components/transactions/TransactionFormDialog';
-import TransactionFilterDialog from '../../components/transactions/TransactionFilterDialog';
+import TransactionFilterSheet from '../../components/transactions/TransactionFilterSheet';
+import TransactionRow from '../../components/transactions/TransactionRow';
 import ReceiptDialog from '../../components/transactions/ReceiptDialog';
-import { formatCurrency, formatDate } from '../../utils/formatters';
-import { brand } from '../../theme/theme';
+import groupByDate from '../../utils/groupByDate';
+import tokens from '../../theme/tokens';
 
-import {
-  listTransactions,
-  createTransaction,
-  updateTransaction,
-  deleteTransaction,
-} from '../../api/transactionApi';
+import { listTransactions, createTransaction, updateTransaction, deleteTransaction } from '../../api/transactionApi';
 import { listCategories } from '../../api/categoryApi';
 import { listBankAccounts } from '../../api/bankAccountApi';
 import { listUpiAccounts } from '../../api/upiAccountApi';
 
-const TYPE_COLOR = {
-  income: '#22C55E',
-  expense: '#EF4444',
-  transfer: '#3B82F6',
-  adjustment: '#F59E0B',
-  opening_balance: '#94A3B8',
-};
+const TYPE_TABS = [
+  { value: '', label: 'All' },
+  { value: 'income', label: 'Income' },
+  { value: 'expense', label: 'Expense' },
+  { value: 'transfer', label: 'Transfer' },
+];
 
-const ALLOCATION_BADGE = {
-  UNALLOCATED: '🔴 Unallocated',
-  PARTIALLY_ALLOCATED: '🟡 Partial',
-  FULLY_ALLOCATED: '🟢 Complete',
-};
-
-const describeRoute = (t) => {
-  if (t.type !== 'transfer') return null;
-  const from = t.transferFrom?.type === 'cash' ? 'Cash' : t.transferFrom?.bankAccount?.bankName || '—';
-  const to = t.transferTo?.type === 'cash' ? 'Cash' : t.transferTo?.bankAccount?.bankName || '—';
-  return `${from} → ${to}`;
-};
-
-// Mirrors frontend/src/pages/transactions/Transactions.jsx — card list instead of a
-// table (there's no room for 9 table columns on a phone), same filters, same dialogs.
+// Redesigned per brief §8: sticky search + filter header, type tabs, date-
+// grouped compact rows (swipe to delete) instead of a table or big cards.
 const TransactionsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ totalItems: 0, currentPage: 1, pageSize: 20 });
-  const [filters, setFilters] = useState({ page: 1, limit: 20 });
+  const [filters, setFilters] = useState({ page: 1, limit: 20, sortBy: 'date', sortDir: 'desc' });
+  const [searchInput, setSearchInput] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const [categories, setCategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
@@ -60,11 +47,11 @@ const TransactionsScreen = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [receiptTarget, setReceiptTarget] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [receiptTarget, setReceiptTarget] = useState(null);
 
   const activeFilterCount = Object.entries(filters).filter(
-    ([k, v]) => !['page', 'limit'].includes(k) && v
+    ([k, v]) => !['page', 'limit', 'sortBy', 'sortDir', 'type'].includes(k) && v
   ).length;
 
   const loadLookups = useCallback(async () => {
@@ -112,139 +99,131 @@ const TransactionsScreen = () => {
     loadTransactions();
   };
 
+  const submitSearch = () => setFilters((f) => ({ ...f, search: searchInput || undefined, page: 1 }));
+
   const handleReceiptUpdated = (updatedTxn) => {
     setRows((prev) => prev.map((r) => (r._id === updatedTxn._id ? { ...r, receiptUrl: updatedTxn.receiptUrl } : r)));
     setReceiptTarget((prev) => (prev ? { ...prev, receiptUrl: updatedTxn.receiptUrl } : prev));
   };
 
+  const groups = filters.sortBy === 'date' || !filters.sortBy ? groupByDate(rows) : [{ label: null, items: rows }];
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer} edges={['top']}>
-        <ActivityIndicator animating color={brand.teal} size="large" />
+        <ActivityIndicator animating color={tokens.brand.teal500} size="large" />
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Sticky header */}
       <View style={styles.header}>
-        <Text variant="titleLarge" style={styles.headerTitle}>
-          Transactions
-        </Text>
-        <View>
-          <IconButton icon="filter-variant" onPress={() => setFilterOpen(true)} />
-          {activeFilterCount > 0 && (
-            <Badge style={styles.filterBadge} size={16}>
-              {activeFilterCount}
-            </Badge>
-          )}
+        <View style={styles.headerTopRow}>
+          <Text style={styles.headerTitle}>Transactions</Text>
+          <View style={styles.headerIcons}>
+            <Pressable onPress={() => setSearchOpen((v) => !v)} hitSlop={8} style={styles.iconBtn}>
+              <MaterialCommunityIcons name="magnify" size={22} color={tokens.neutral.textPrimary} />
+            </Pressable>
+            <Pressable onPress={() => setFilterOpen(true)} hitSlop={8} style={styles.iconBtn}>
+              <MaterialCommunityIcons name="tune-variant" size={20} color={tokens.neutral.textPrimary} />
+              {activeFilterCount > 0 && <View style={styles.filterDot} />}
+            </Pressable>
+          </View>
         </View>
+
+        {searchOpen && (
+          <View style={styles.searchRow}>
+            <MaterialCommunityIcons name="magnify" size={16} color={tokens.neutral.textMuted} />
+            <TextInput
+              value={searchInput}
+              onChangeText={setSearchInput}
+              onSubmitEditing={submitSearch}
+              placeholder="Search notes…"
+              placeholderTextColor={tokens.neutral.textMuted}
+              style={styles.searchInput}
+              returnKeyType="search"
+            />
+            {!!searchInput && (
+              <Pressable onPress={() => { setSearchInput(''); setFilters((f) => ({ ...f, search: undefined, page: 1 })); }}>
+                <MaterialCommunityIcons name="close-circle" size={16} color={tokens.neutral.textMuted} />
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsRow}>
+          {TYPE_TABS.map((tab) => (
+            <Pressable
+              key={tab.value}
+              onPress={() => setFilters((f) => ({ ...f, type: tab.value || undefined, page: 1 }))}
+              style={[styles.tab, (filters.type || '') === tab.value && styles.tabActive]}
+            >
+              <Text style={[styles.tabLabel, (filters.type || '') === tab.value && styles.tabLabelActive]}>{tab.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[brand.teal]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[tokens.brand.teal500]} />}
       >
         {rows.length === 0 ? (
-          <EmptyState
-            icon="swap-horizontal"
-            title="No transactions found"
-            description="Add your first transaction, or adjust your filters."
-            actionLabel="Add Transaction"
-            onAction={() => setDialogOpen(true)}
-          />
+          <FinoraCard>
+            <FinoraEmptyState
+              icon="swap-horizontal"
+              title="No transactions found"
+              description="Add your first transaction, or adjust your filters."
+              actionLabel="Add Transaction"
+              onAction={() => { setEditing(null); setDialogOpen(true); }}
+            />
+          </FinoraCard>
         ) : (
-          rows.map((t) => (
-            <Surface key={t._id} style={styles.card} elevation={1}>
-              <View style={styles.cardBody} onTouchEnd={() => { setEditing(t); setDialogOpen(true); }}>
-                <View style={styles.cardTopRow}>
-                  <View style={{ flex: 1 }}>
-                    <View style={styles.chipRow}>
-                      <Chip
-                        compact
-                        style={{ backgroundColor: `${TYPE_COLOR[t.type]}1A` }}
-                        textStyle={{ color: TYPE_COLOR[t.type], fontSize: 11 }}
-                      >
-                        {t.type}
-                      </Chip>
-                      {ALLOCATION_BADGE[t.allocationStatus] && (
-                        <Chip compact textStyle={{ fontSize: 11 }}>
-                          {ALLOCATION_BADGE[t.allocationStatus]}
-                        </Chip>
-                      )}
-                    </View>
-                    <Text variant="titleSmall" style={styles.bold}>
-                      {t.type === 'transfer'
-                        ? describeRoute(t)
-                        : t.subcategory
-                        ? `${t.category?.name || '—'} › ${t.subcategory.name}`
-                        : t.category?.name || '—'}
-                    </Text>
-                    <Text variant="bodySmall" style={styles.muted}>
-                      {formatDate(t.date)} · {t.entrySource === 'IMPORTED' ? 'Imported' : 'Manual'}
-                    </Text>
-                    {t.note ? (
-                      <Text variant="bodySmall" style={styles.note} numberOfLines={1}>
-                        {t.note}
-                      </Text>
-                    ) : null}
+          groups.map((group, gi) => (
+            <View key={group.label || gi} style={styles.group}>
+              {group.label && <Text style={styles.groupLabel}>{group.label}</Text>}
+              <FinoraCard padded={false}>
+                {group.items.map((t, i) => (
+                  <View key={t._id}>
+                    {i > 0 && <View style={styles.divider} />}
+                    <TransactionRow
+                      transaction={t}
+                      onPress={() => { setEditing(t); setDialogOpen(true); }}
+                      onDelete={() => setDeleteTarget(t)}
+                      onReceiptPress={() => setReceiptTarget(t)}
+                    />
                   </View>
-                  <Text
-                    variant="titleMedium"
-                    style={{
-                      fontWeight: '700',
-                      color: t.type === 'income' ? '#22C55E' : t.type === 'expense' ? '#EF4444' : brand.navy,
-                    }}
-                  >
-                    {t.type === 'expense' ? '-' : t.type === 'income' ? '+' : ''}
-                    {formatCurrency(t.amount)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.actionRow}>
-                <IconButton
-                  icon={t.receiptUrl ? 'paperclip' : 'paperclip'}
-                  size={18}
-                  iconColor={t.receiptUrl ? brand.teal : '#94A3B8'}
-                  onPress={() => setReceiptTarget(t)}
-                />
-                <IconButton icon="pencil-outline" size={18} onPress={() => { setEditing(t); setDialogOpen(true); }} />
-                <IconButton icon="delete-outline" size={18} iconColor="#EF4444" onPress={() => setDeleteTarget(t)} />
-              </View>
-            </Surface>
+                ))}
+              </FinoraCard>
+            </View>
           ))
         )}
 
         {rows.length > 0 && (
           <View style={styles.pagination}>
-            <Button
+            <FinoraButton
+              label="Previous"
+              variant="ghost"
               disabled={meta.currentPage <= 1}
               onPress={() => setFilters((f) => ({ ...f, page: (f.page || 1) - 1 }))}
-            >
-              Previous
-            </Button>
-            <Text variant="bodySmall" style={{ color: '#64748B' }}>
-              Page {meta.currentPage} of {Math.max(1, Math.ceil(meta.totalItems / meta.pageSize))}
+              style={{ flex: 1 }}
+            />
+            <Text style={styles.pageLabel}>
+              {meta.currentPage} / {Math.max(1, Math.ceil(meta.totalItems / meta.pageSize))}
             </Text>
-            <Button
+            <FinoraButton
+              label="Next"
+              variant="ghost"
               disabled={meta.currentPage * meta.pageSize >= meta.totalItems}
               onPress={() => setFilters((f) => ({ ...f, page: (f.page || 1) + 1 }))}
-            >
-              Next
-            </Button>
+              style={{ flex: 1 }}
+            />
           </View>
         )}
+        <View style={{ height: 24 }} />
       </ScrollView>
-
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        color="#fff"
-        onPress={() => {
-          setEditing(null);
-          setDialogOpen(true);
-        }}
-      />
 
       <TransactionFormDialog
         open={dialogOpen}
@@ -252,20 +231,17 @@ const TransactionsScreen = () => {
         categories={categories}
         bankAccounts={bankAccounts}
         upiAccounts={upiAccounts}
-        onClose={() => {
-          setDialogOpen(false);
-          setEditing(null);
-        }}
+        onClose={() => { setDialogOpen(false); setEditing(null); }}
         onSubmit={submit}
       />
 
-      <TransactionFilterDialog
+      <TransactionFilterSheet
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
         filters={filters}
         categories={categories}
-        onApply={(f) => setFilters({ ...f, page: 1, limit: 20 })}
-        onClear={() => setFilters({ page: 1, limit: 20 })}
+        onApply={(f) => setFilters((prev) => ({ ...prev, ...f, page: 1 }))}
+        onClear={() => setFilters({ page: 1, limit: 20, sortBy: 'date', sortDir: 'desc', type: filters.type })}
       />
 
       <ReceiptDialog open={!!receiptTarget} transaction={receiptTarget} onClose={() => setReceiptTarget(null)} onUpdated={handleReceiptUpdated} />
@@ -283,22 +259,32 @@ const TransactionsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.bg },
-  container: { flex: 1, backgroundColor: brand.bg },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12 },
-  headerTitle: { fontWeight: '700', color: brand.navy },
-  filterBadge: { position: 'absolute', top: 4, right: 4, backgroundColor: brand.teal },
-  content: { padding: 16, paddingTop: 8, paddingBottom: 96 },
-  card: { borderRadius: 12, backgroundColor: '#FFFFFF', marginBottom: 12, overflow: 'hidden' },
-  cardBody: { padding: 14, paddingBottom: 8 },
-  cardTopRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  chipRow: { flexDirection: 'row', gap: 6, marginBottom: 6, flexWrap: 'wrap' },
-  bold: { fontWeight: '700' },
-  muted: { color: '#94A3B8', marginTop: 2 },
-  note: { color: '#64748B', marginTop: 4 },
-  actionRow: { flexDirection: 'row', justifyContent: 'flex-end', borderTopWidth: 1, borderTopColor: '#F8FAFC' },
-  pagination: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: brand.navy },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: tokens.neutral.bg },
+  container: { flex: 1, backgroundColor: tokens.neutral.bg },
+
+  header: { backgroundColor: tokens.neutral.surface, paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.sm, borderBottomWidth: 1, borderBottomColor: tokens.neutral.border },
+  headerTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.space.sm },
+  headerTitle: { ...tokens.typography.h2, color: tokens.neutral.textPrimary },
+  headerIcons: { flexDirection: 'row', gap: 14 },
+  iconBtn: { position: 'relative' },
+  filterDot: { position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: 4, backgroundColor: tokens.semantic.expense },
+
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: tokens.neutral.surfaceAlt, borderRadius: tokens.radius.md, paddingHorizontal: 12, marginBottom: tokens.space.sm },
+  searchInput: { flex: 1, paddingVertical: 9, color: tokens.neutral.textPrimary, fontSize: 14 },
+
+  tabsRow: { flexGrow: 0, marginBottom: tokens.space.sm },
+  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: tokens.radius.pill, backgroundColor: tokens.neutral.surfaceAlt, marginRight: 8 },
+  tabActive: { backgroundColor: tokens.brand.ink800 },
+  tabLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textSecondary, fontWeight: '600' },
+  tabLabelActive: { color: '#fff' },
+
+  content: { padding: tokens.space.lg, paddingBottom: 100 },
+  group: { marginBottom: tokens.space.lg },
+  groupLabel: { ...tokens.typography.label, color: tokens.neutral.textMuted, marginBottom: 8, marginLeft: 2 },
+  divider: { height: 1, backgroundColor: tokens.neutral.border, marginLeft: 60 },
+
+  pagination: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  pageLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textMuted },
 });
 
 export default TransactionsScreen;
