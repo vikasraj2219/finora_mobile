@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, View, StyleSheet, Dimensions, Easing } from 'react-native';
 import { Portal } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,9 +15,18 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const FinoraBottomSheet = ({ visible, onClose, children, title }) => {
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  // Keeps the Portal mounted for the duration of the close animation instead
+  // of unmounting the instant `visible` flips to false. Unmounting the Portal
+  // (which tears down a native view tree) at the exact same moment something
+  // else — e.g. a tab navigation triggered by the same tap — is also
+  // transitioning views is a real crash trigger on Android; this was actually
+  // happening (not just a cosmetic animation skip) whenever an action inside
+  // a sheet both closed the sheet and navigated in the same call.
+  const [rendered, setRendered] = useState(visible);
 
   useEffect(() => {
     if (visible) {
+      setRendered(true);
       Animated.parallel([
         Animated.timing(translateY, { toValue: 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
         Animated.timing(backdropOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
@@ -26,11 +35,13 @@ const FinoraBottomSheet = ({ visible, onClose, children, title }) => {
       Animated.parallel([
         Animated.timing(translateY, { toValue: SCREEN_HEIGHT, duration: 200, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
         Animated.timing(backdropOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
-      ]).start();
+      ]).start(({ finished }) => {
+        if (finished) setRendered(false);
+      });
     }
   }, [visible, translateY, backdropOpacity]);
 
-  if (!visible) return null;
+  if (!rendered) return null;
 
   return (
     <Portal>
