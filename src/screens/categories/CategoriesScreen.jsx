@@ -1,27 +1,39 @@
 import { useState, useCallback } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
-import { View, ScrollView, StyleSheet, RefreshControl, Pressable } from 'react-native';
-import { FAB, Chip, ActivityIndicator, Text } from 'react-native-paper';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 
-import EmptyState from '../../components/common/EmptyState';
-import ManagedItemCard from '../../components/common/ManagedItemCard';
+import FinoraCard from '../../components/ui/FinoraCard';
+import FinoraEmptyState from '../../components/ui/FinoraEmptyState';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import CategoryCard from '../../components/categories/CategoryCard';
+import CategoryActionSheet from '../../components/categories/CategoryActionSheet';
 import CategoryFormDialog from '../../components/categories/CategoryFormDialog';
 import { listCategories, createCategory, updateCategory, deleteCategory } from '../../api/categoryApi';
 import { listTypes } from '../../api/typeApi';
-import { brand } from '../../theme/theme';
+import { listSubcategories } from '../../api/subcategoryApi';
+import { getCategoryBreakdown } from '../../api/dashboardApi';
+import tokens from '../../theme/tokens';
 
-// Mirrors frontend/src/pages/categories/Categories.jsx — type tabs driven by the
-// real Type collection, one category list per type.
+// Redesigned per brief §10 — spending-aware category cards instead of a flat
+// admin list. Monthly spend + % share come from the real dashboard breakdown
+// endpoint; subcategory counts are fetched per category (small personal
+// category lists, so N parallel calls is cheap) since there's no bulk-count
+// endpoint on the backend.
 const CategoriesScreen = () => {
+  const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [types, setTypes] = useState([]);
   const [tab, setTab] = useState('');
   const [categories, setCategories] = useState([]);
+  const [subCounts, setSubCounts] = useState({});
+  const [breakdown, setBreakdown] = useState({});
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [actionTarget, setActionTarget] = useState(null);
 
   const loadTypes = useCallback(async () => {
     const { data } = await listTypes({ appliesToCategory: true });
@@ -32,8 +44,20 @@ const CategoriesScreen = () => {
 
   const loadCategories = useCallback(async (activeTab) => {
     if (!activeTab) return;
-    const { data } = await listCategories({ type: activeTab });
-    setCategories(data.data);
+    const [catRes, breakdownRes] = await Promise.all([
+      listCategories({ type: activeTab }),
+      getCategoryBreakdown({ type: activeTab }),
+    ]);
+    setCategories(catRes.data.data);
+
+    const breakdownMap = {};
+    breakdownRes.data.data.forEach((b) => { breakdownMap[b.categoryId] = b; });
+    setBreakdown(breakdownMap);
+
+    const counts = await Promise.all(
+      catRes.data.data.map((c) => listSubcategories({ category: c._id }).then((r) => [c._id, r.data.data.length]).catch(() => [c._id, 0]))
+    );
+    setSubCounts(Object.fromEntries(counts));
   }, []);
 
   useFocusEffect(
@@ -72,65 +96,72 @@ const CategoriesScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator animating color={brand.teal} size="large" />
+        <ActivityIndicator animating color={tokens.brand.teal500} size="large" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsRow} contentContainerStyle={{ paddingHorizontal: 16 }}>
+      <View style={styles.header}>
+        <Text style={styles.pageTitle}>Categories</Text>
+        <Pressable style={styles.addBtn} onPress={() => { setEditing(null); setDialogOpen(true); }}>
+          <Text style={styles.addBtnText}>+ Add</Text>
+        </Pressable>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsRow} contentContainerStyle={{ paddingHorizontal: tokens.space.lg }}>
         {types.map((t) => (
-          <Pressable
-            key={t.code}
-            onPress={() => setTab(t.code)}
-            style={[styles.tabChip, tab === t.code && styles.tabChipActive]}
-          >
-            <Text style={{ color: tab === t.code ? '#fff' : '#64748B', fontWeight: '600', fontSize: 13 }}>{t.label}</Text>
+          <Pressable key={t.code} onPress={() => setTab(t.code)} style={[styles.tab, tab === t.code && styles.tabActive]}>
+            <Text style={[styles.tabLabel, tab === t.code && styles.tabLabelActive]}>{t.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[brand.teal]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[tokens.brand.teal500]} />}
       >
         {types.length === 0 ? (
-          <EmptyState
-            icon="tune"
-            title="No category-eligible types yet"
-            description="Add a type (like Income or Expense) from the Types page before you can create categories."
-          />
+          <FinoraCard>
+            <FinoraEmptyState icon="tune" title="No category-eligible types yet" description="Add a type (like Income or Expense) from the Types page before you can create categories." />
+          </FinoraCard>
         ) : categories.length === 0 ? (
-          <EmptyState
-            icon="shape-outline"
-            title="No categories yet"
-            description="Add a category to start organizing your transactions."
-            actionLabel="Add Category"
-            onAction={() => setDialogOpen(true)}
-          />
+          <FinoraCard>
+            <FinoraEmptyState
+              icon="shape-outline"
+              title="No categories yet"
+              description="Add a category to start organizing your transactions."
+              actionLabel="Add Category"
+              onAction={() => setDialogOpen(true)}
+            />
+          </FinoraCard>
         ) : (
           categories.map((cat) => (
-            <ManagedItemCard
+            <CategoryCard
               key={cat._id}
+              icon={cat.icon || 'shape-outline'}
               color={cat.color}
-              icon={cat.icon}
-              title={cat.name}
-              meta={cat.group}
-              badges={cat.isDefault ? <Chip compact textStyle={{ fontSize: 10 }}>Default</Chip> : null}
-              onEdit={() => {
-                setEditing(cat);
-                setDialogOpen(true);
-              }}
-              onDelete={() => setDeleteTarget(cat)}
+              name={cat.name}
+              subcategoryCount={subCounts[cat._id] ?? 0}
+              monthTotal={breakdown[cat._id]?.total || 0}
+              percentage={breakdown[cat._id]?.percentage}
+              isDefault={cat.isDefault}
+              onPress={() => navigation.navigate('Subcategories', { categoryId: cat._id })}
+              onMenuPress={() => setActionTarget(cat)}
             />
           ))
         )}
       </ScrollView>
 
-      {types.length > 0 && (
-        <FAB icon="plus" style={styles.fab} color="#fff" onPress={() => { setEditing(null); setDialogOpen(true); }} />
-      )}
+      <CategoryActionSheet
+        visible={!!actionTarget}
+        category={actionTarget}
+        onClose={() => setActionTarget(null)}
+        onManageSubcategories={() => navigation.navigate('Subcategories', { categoryId: actionTarget._id })}
+        onEdit={() => { setEditing(actionTarget); setDialogOpen(true); }}
+        onDelete={() => setDeleteTarget(actionTarget)}
+      />
 
       <CategoryFormDialog
         open={dialogOpen}
@@ -154,13 +185,18 @@ const CategoriesScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.bg },
-  container: { flex: 1, backgroundColor: brand.bg },
-  tabsRow: { paddingVertical: 12, flexGrow: 0 },
-  tabChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: '#F1F5F9', marginRight: 8 },
-  tabChipActive: { backgroundColor: brand.navy },
-  content: { padding: 16, paddingTop: 0, paddingBottom: 96 },
-  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: brand.navy },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: tokens.neutral.bg },
+  container: { flex: 1, backgroundColor: tokens.neutral.bg },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: tokens.space.lg, paddingTop: tokens.space.sm },
+  pageTitle: { ...tokens.typography.h1, color: tokens.neutral.textPrimary },
+  addBtn: { backgroundColor: tokens.brand.ink800, paddingHorizontal: 14, paddingVertical: 8, borderRadius: tokens.radius.pill },
+  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  tabsRow: { paddingVertical: tokens.space.md, flexGrow: 0 },
+  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: tokens.radius.pill, backgroundColor: tokens.neutral.surfaceAlt, marginRight: 8 },
+  tabActive: { backgroundColor: tokens.brand.ink800 },
+  tabLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textSecondary, fontWeight: '600' },
+  tabLabelActive: { color: '#fff' },
+  content: { padding: tokens.space.lg, paddingTop: 0, paddingBottom: 48 },
 });
 
 export default CategoriesScreen;
