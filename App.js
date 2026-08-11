@@ -6,6 +6,7 @@ import { PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/context/AuthContext';
 import { QuickAddProvider } from './src/context/QuickAddContext';
 import RootNavigator from './src/navigation/RootNavigator';
+import ErrorBoundary from './src/components/common/ErrorBoundary';
 import theme from './src/theme/theme';
 
 export default function App() {
@@ -13,12 +14,14 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <PaperProvider theme={theme}>
-          <AuthProvider>
-            <QuickAddProvider>
-              <StatusBar style="dark" />
-              <RootNavigator />
-            </QuickAddProvider>
-          </AuthProvider>
+          <ErrorBoundary>
+            <AuthProvider>
+              <QuickAddProvider>
+                <StatusBar style="dark" />
+                <RootNavigator />
+              </QuickAddProvider>
+            </AuthProvider>
+          </ErrorBoundary>
         </PaperProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

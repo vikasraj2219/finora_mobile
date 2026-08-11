@@ -67,11 +67,11 @@ const TransactionFilterSheet = ({ open, onClose, filters, categories, onApply, o
         <View style={{ marginBottom: tokens.space.lg }}>
           <Text style={styles.groupTitle}>Category</Text>
           <View style={styles.chipWrap}>
-            <Pressable onPress={set('category')('')}>
+            <Pressable onPress={() => set('category')('')}>
               <FinoraChip label="All" tone={!draft.category ? 'brand' : 'neutral'} />
             </Pressable>
             {categories.map((c) => (
-              <Pressable key={c._id} onPress={set('category')(c._id)}>
+              <Pressable key={c._id} onPress={() => set('category')(c._id)}>
                 <FinoraChip label={c.name} tone={draft.category === c._id ? 'brand' : 'neutral'} />
               </Pressable>
             ))}

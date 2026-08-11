@@ -33,6 +33,7 @@ const TYPE_TABS = [
 // grouped compact rows (swipe to delete) instead of a table or big cards.
 const TransactionsScreen = () => {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [rows, setRows] = useState([]);
   const [meta, setMeta] = useState({ totalItems: 0, currentPage: 1, pageSize: 20 });
@@ -69,8 +70,11 @@ const TransactionsScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
+      setLoadError(null);
       Promise.all([loadLookups(), loadTransactions()])
-        .catch(() => {})
+        .catch((err) => {
+          setLoadError(err?.response?.data?.message || err?.message || 'Failed to load transactions');
+        })
         .finally(() => setLoading(false));
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters])
@@ -170,7 +174,17 @@ const TransactionsScreen = () => {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[tokens.brand.teal500]} />}
       >
-        {rows.length === 0 ? (
+        {loadError ? (
+          <FinoraCard>
+            <FinoraEmptyState
+              icon="alert-circle-outline"
+              title="Couldn't load transactions"
+              description={loadError}
+              actionLabel="Retry"
+              onAction={() => { setLoading(true); loadTransactions().then(() => setLoadError(null)).catch((err) => setLoadError(err?.response?.data?.message || err?.message || 'Failed to load transactions')).finally(() => setLoading(false)); }}
+            />
+          </FinoraCard>
+        ) : rows.length === 0 ? (
           <FinoraCard>
             <FinoraEmptyState
               icon="swap-horizontal"
