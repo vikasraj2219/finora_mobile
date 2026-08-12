@@ -134,7 +134,7 @@ const CategoriesScreen = () => {
               style={[styles.tab, { backgroundColor: active ? color : `${color}15` }]}
             >
               <MaterialCommunityIcons name={t.icon || 'label'} size={13} color={active ? '#fff' : color} style={{ marginRight: 5 }} />
-              <Text style={[styles.tabLabel, { color: active ? '#fff' : color }]}>{t.label}</Text>
+              <Text style={[styles.tabLabel, { color: active ? '#fff' : color }]} numberOfLines={1}>{t.label || t.code}</Text>
             </Pressable>
           );
         })}

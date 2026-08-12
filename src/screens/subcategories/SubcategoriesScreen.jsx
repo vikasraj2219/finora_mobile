@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { useFocusEffect, useRoute } from '@react-navigation/native';
+import { useState, useCallback, useEffect } from 'react';
+import { useFocusEffect, useRoute, useNavigation } from '@react-navigation/native';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -25,6 +25,7 @@ import tokens from '../../theme/tokens';
 // potential backend addition if you want it.
 const SubcategoriesScreen = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const presetCategoryId = route.params?.categoryId;
 
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,6 @@ const SubcategoriesScreen = () => {
   const [typeTab, setTypeTab] = useState('');
   const [categories, setCategories] = useState([]);
   const [categoryId, setCategoryId] = useState(presetCategoryId || '');
-  const [presetResolved, setPresetResolved] = useState(!presetCategoryId);
   const [categorySwitcherOpen, setCategorySwitcherOpen] = useState(false);
   const [subcategories, setSubcategories] = useState([]);
   const [categoryMonthTotal, setCategoryMonthTotal] = useState(0);
@@ -81,31 +81,48 @@ const SubcategoriesScreen = () => {
     }
   }, []);
 
+  // Handles arriving from the Categories screen's card tap
+  // (navigate('Subcategories', { categoryId })). This is a *separate* effect
+  // from useFocusEffect below, keyed only on the incoming param, because
+  // React Navigation reuses this screen's existing instance when it's
+  // already in the stack — tapping a second, different category card does
+  // NOT remount the component, so a one-shot "already resolved" flag would
+  // only ever fire once and every subsequent category tap would silently
+  // keep showing whichever category was opened first. Resolving the type tab
+  // for the incoming category here, every time the param actually changes,
+  // then clearing it via setParams (so it doesn't re-fire on an unrelated
+  // focus/blur later) fixes that.
+  useEffect(() => {
+    if (!presetCategoryId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const loadedTypes = types.length ? types : await loadTypes();
+        for (const t of loadedTypes) {
+          const { data } = await listCategories({ type: t.code });
+          if (data.data.some((c) => c._id === presetCategoryId)) {
+            if (!cancelled) {
+              setTypeTab(t.code);
+              setCategoryId(presetCategoryId);
+            }
+            break;
+          }
+        }
+      } finally {
+        if (!cancelled) navigation.setParams({ categoryId: undefined });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetCategoryId]);
+
   useFocusEffect(
     useCallback(() => {
       (async () => {
         const loadedTypes = await loadTypes();
-        let activeType = typeTab || loadedTypes[0]?.code;
-
-        // If we arrived with a preset category (from Categories screen), find
-        // its type first so the correct tab + category are both selected.
-        // Gated on presetResolved (not categoryId) since categoryId is
-        // pre-seeded from presetCategoryId — checking categoryId's truthiness
-        // here would skip this resolution step entirely.
-        if (presetCategoryId && !presetResolved) {
-          for (const t of loadedTypes) {
-            const { data } = await listCategories({ type: t.code });
-            if (data.data.some((c) => c._id === presetCategoryId)) {
-              activeType = t.code;
-              setTypeTab(t.code);
-              break;
-            }
-          }
-          setPresetResolved(true);
-        }
-
+        const activeType = typeTab || loadedTypes[0]?.code;
         const loadedCategories = await loadCategories(activeType);
-        const activeCategory = categoryId || presetCategoryId || loadedCategories[0]?._id;
+        const activeCategory = categoryId || loadedCategories[0]?._id;
         setCategoryId(activeCategory);
         await Promise.all([loadSubcategories(activeCategory), loadMonthTotal(activeType, activeCategory)]);
       })()
@@ -175,7 +192,7 @@ const SubcategoriesScreen = () => {
                   style={[styles.tab, { backgroundColor: active ? color : `${color}15` }]}
                 >
                   <MaterialCommunityIcons name={t.icon || 'label'} size={12} color={active ? '#fff' : color} style={{ marginRight: 5 }} />
-                  <Text style={[styles.tabLabel, { color: active ? '#fff' : color }]}>{t.label}</Text>
+                  <Text style={[styles.tabLabel, { color: active ? '#fff' : color }]} numberOfLines={1}>{t.label || t.code}</Text>
                 </Pressable>
               );
             })}
