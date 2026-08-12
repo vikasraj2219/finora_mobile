@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated as RNAnimated } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import Animated, { FadeIn, useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import FinoraCard from '../ui/FinoraCard';
 import { formatCurrency } from '../../utils/formatters';
 import tokens from '../../theme/tokens';
 
@@ -32,14 +33,16 @@ const describeAccount = (t) => {
   return null;
 };
 
-// Compact transaction row, now using the *category's own* color and icon
-// (set per-category in Categories/Subcategories) for income/expense rows
-// instead of one generic icon per type — so a "Groceries" row and a "Rent"
-// row read distinctly at a glance the same way they do on the Categories
-// screen, rather than looking identical because both are "expense". Transfer/
-// adjustment/opening-balance rows (which have no category) fall back to the
-// type icon+tone. A soft press-scale (reanimated) adds tactile feedback on
-// top of the existing staggered fade-in and swipe-to-delete.
+// Each transaction is now its own elevated card — pastel icon tile, name,
+// account/source line, amount — rather than a row inside one merged list
+// divided by hairlines, matching the card language used on Categories/
+// Subcategories/Types. The icon tile uses the *category's own* color/icon
+// (set per-category in Categories) for income/expense rows instead of one
+// generic icon per type — so "Groceries" and "Rent" read distinctly at a
+// glance instead of looking identical because both are "expense". Transfer/
+// adjustment/opening-balance rows (no category) fall back to the type
+// icon+tone. A soft press-scale (reanimated) adds tactile feedback on top of
+// the staggered card entrance and swipe-to-delete.
 const TransactionRow = ({ transaction: t, index = 0, onPress, onDelete, onReceiptPress }) => {
   const title =
     t.type === 'transfer'
@@ -56,7 +59,7 @@ const TransactionRow = ({ transaction: t, index = 0, onPress, onDelete, onReceip
 
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const onPressIn = useCallback(() => { scale.value = withTiming(0.985, { duration: 90 }); }, []);
+  const onPressIn = useCallback(() => { scale.value = withTiming(0.98, { duration: 90 }); }, []);
   const onPressOut = useCallback(() => { scale.value = withTiming(1, { duration: 120 }); }, []);
 
   const renderRightActions = (progress, dragX) => {
@@ -71,43 +74,45 @@ const TransactionRow = ({ transaction: t, index = 0, onPress, onDelete, onReceip
   };
 
   return (
-    <Animated.View entering={FadeIn.delay(Math.min(index, 8) * 35).duration(240)}>
+    <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(280)} style={styles.cardWrap}>
       <Swipeable renderRightActions={renderRightActions} overshootRight={false}>
         <Animated.View style={pressStyle}>
-          <Pressable
-            onPress={onPress}
-            onPressIn={onPressIn}
-            onPressOut={onPressOut}
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-          >
-            <View style={[styles.iconWrap, { backgroundColor: `${avatarColor}17`, borderColor: `${avatarColor}30` }]}>
-              <MaterialCommunityIcons name={avatarIcon} size={19} color={avatarColor} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
-              <Text style={styles.meta} numberOfLines={1}>
-                {[account, t.entrySource === 'IMPORTED' ? 'Imported' : null].filter(Boolean).join(' · ')}
-              </Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <View style={styles.amountRow}>
-                {onReceiptPress && (
-                  <Pressable onPress={onReceiptPress} hitSlop={8} style={styles.receiptBtn}>
-                    <MaterialCommunityIcons name="paperclip" size={14} color={t.receiptUrl ? tokens.brand.teal600 : tokens.neutral.textMuted} />
-                  </Pressable>
-                )}
-                <Text style={[styles.amount, { color: amountColor }]}>
-                  {t.type === 'expense' ? '-' : t.type === 'income' ? '+' : ''}
-                  {formatCurrency(t.amount)}
+          <FinoraCard padded={false}>
+            <Pressable
+              onPress={onPress}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            >
+              <View style={[styles.iconWrap, { backgroundColor: `${avatarColor}1F` }]}>
+                <MaterialCommunityIcons name={avatarIcon} size={22} color={avatarColor} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.title} numberOfLines={1}>
+                  {title}
+                </Text>
+                <Text style={styles.meta} numberOfLines={1}>
+                  {[account, t.entrySource === 'IMPORTED' ? 'Imported' : null].filter(Boolean).join(' · ')}
                 </Text>
               </View>
-              {t.allocationStatus && t.allocationStatus !== 'FULLY_ALLOCATED' && (
-                <View style={[styles.allocDot, { backgroundColor: ALLOCATION_DOT[t.allocationStatus] }]} />
-              )}
-            </View>
-          </Pressable>
+              <View style={{ alignItems: 'flex-end' }}>
+                <View style={styles.amountRow}>
+                  {onReceiptPress && (
+                    <Pressable onPress={onReceiptPress} hitSlop={8} style={styles.receiptBtn}>
+                      <MaterialCommunityIcons name="paperclip" size={14} color={t.receiptUrl ? tokens.brand.teal600 : tokens.neutral.textMuted} />
+                    </Pressable>
+                  )}
+                  <Text style={[styles.amount, { color: amountColor }]}>
+                    {t.type === 'expense' ? '-' : t.type === 'income' ? '+' : ''}
+                    {formatCurrency(t.amount)}
+                  </Text>
+                </View>
+                {t.allocationStatus && t.allocationStatus !== 'FULLY_ALLOCATED' && (
+                  <View style={[styles.allocDot, { backgroundColor: ALLOCATION_DOT[t.allocationStatus] }]} />
+                )}
+              </View>
+            </Pressable>
+          </FinoraCard>
         </Animated.View>
       </Swipeable>
     </Animated.View>
@@ -115,16 +120,17 @@ const TransactionRow = ({ transaction: t, index = 0, onPress, onDelete, onReceip
 };
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 12, paddingHorizontal: tokens.space.md, backgroundColor: tokens.neutral.surface },
+  cardWrap: { marginBottom: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: tokens.space.md },
   rowPressed: { backgroundColor: tokens.neutral.surfaceAlt },
-  iconWrap: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  title: { ...tokens.typography.body, fontWeight: '600', color: tokens.neutral.textPrimary },
-  meta: { ...tokens.typography.caption, color: tokens.neutral.textMuted, marginTop: 1 },
-  amount: { ...tokens.typography.body, fontWeight: '700' },
+  iconWrap: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  title: { ...tokens.typography.bodyLg, fontWeight: '700', color: tokens.neutral.textPrimary },
+  meta: { ...tokens.typography.bodySm, color: tokens.neutral.textMuted, marginTop: 2 },
+  amount: { ...tokens.typography.bodyLg, fontWeight: '700' },
   amountRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   receiptBtn: { padding: 2 },
   allocDot: { width: 6, height: 6, borderRadius: 3, marginTop: 4 },
-  deleteAction: { backgroundColor: tokens.semantic.error, justifyContent: 'center', alignItems: 'center', width: 64 },
+  deleteAction: { backgroundColor: tokens.semantic.error, justifyContent: 'center', alignItems: 'center', width: 64, borderRadius: tokens.radius.lg, marginLeft: 8 },
 });
 
 export default TransactionRow;

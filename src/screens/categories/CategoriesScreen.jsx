@@ -124,11 +124,20 @@ const CategoriesScreen = () => {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsRow} contentContainerStyle={{ paddingHorizontal: tokens.space.lg }}>
-        {types.map((t) => (
-          <Pressable key={t.code} onPress={() => setTab(t.code)} style={[styles.tab, tab === t.code && styles.tabActive]}>
-            <Text style={[styles.tabLabel, tab === t.code && styles.tabLabelActive]}>{t.label}</Text>
-          </Pressable>
-        ))}
+        {types.map((t) => {
+          const active = tab === t.code;
+          const color = t.color || tokens.brand.ink800;
+          return (
+            <Pressable
+              key={t.code}
+              onPress={() => setTab(t.code)}
+              style={[styles.tab, { backgroundColor: active ? color : `${color}15` }]}
+            >
+              <MaterialCommunityIcons name={t.icon || 'label'} size={13} color={active ? '#fff' : color} style={{ marginRight: 5 }} />
+              <Text style={[styles.tabLabel, { color: active ? '#fff' : color }]}>{t.label}</Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
       <ScrollView
@@ -206,10 +215,8 @@ const styles = StyleSheet.create({
   addBtn: { backgroundColor: tokens.brand.ink800, paddingHorizontal: 14, paddingVertical: 8, borderRadius: tokens.radius.pill },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   tabsRow: { paddingVertical: tokens.space.md, flexGrow: 0 },
-  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: tokens.radius.pill, backgroundColor: tokens.neutral.surfaceAlt, marginRight: 8 },
-  tabActive: { backgroundColor: tokens.brand.ink800 },
-  tabLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textSecondary, fontWeight: '600' },
-  tabLabelActive: { color: '#fff' },
+  tab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: tokens.radius.pill, marginRight: 8 },
+  tabLabel: { ...tokens.typography.bodySm, fontWeight: '700' },
   content: { padding: tokens.space.lg, paddingTop: 0, paddingBottom: 48 },
 });
 

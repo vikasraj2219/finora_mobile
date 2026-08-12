@@ -165,15 +165,20 @@ const SubcategoriesScreen = () => {
       {categorySwitcherOpen && (
         <View style={styles.switcherPanel}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
-            {types.map((t) => (
-              <Pressable
-                key={t.code}
-                onPress={() => { setTypeTab(t.code); setCategoryId(''); }}
-                style={[styles.tab, typeTab === t.code && styles.tabActive]}
-              >
-                <Text style={[styles.tabLabel, typeTab === t.code && styles.tabLabelActive]}>{t.label}</Text>
-              </Pressable>
-            ))}
+            {types.map((t) => {
+              const active = typeTab === t.code;
+              const color = t.color || tokens.brand.ink800;
+              return (
+                <Pressable
+                  key={t.code}
+                  onPress={() => { setTypeTab(t.code); setCategoryId(''); }}
+                  style={[styles.tab, { backgroundColor: active ? color : `${color}15` }]}
+                >
+                  <MaterialCommunityIcons name={t.icon || 'label'} size={12} color={active ? '#fff' : color} style={{ marginRight: 5 }} />
+                  <Text style={[styles.tabLabel, { color: active ? '#fff' : color }]}>{t.label}</Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
           <ScrollView style={{ maxHeight: 220 }}>
             {categories.map((c) => (
@@ -272,10 +277,8 @@ const styles = StyleSheet.create({
   headerSubtitle: { ...tokens.typography.bodySm, color: tokens.neutral.textMuted, marginTop: 2 },
 
   switcherPanel: { backgroundColor: tokens.neutral.surface, padding: tokens.space.lg, borderBottomWidth: 1, borderBottomColor: tokens.neutral.border },
-  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: tokens.radius.pill, backgroundColor: tokens.neutral.surfaceAlt, marginRight: 8 },
-  tabActive: { backgroundColor: tokens.brand.ink800 },
-  tabLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textSecondary, fontWeight: '600' },
-  tabLabelActive: { color: '#fff' },
+  tab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: tokens.radius.pill, marginRight: 8 },
+  tabLabel: { ...tokens.typography.bodySm, fontWeight: '700' },
   switcherRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
   switcherRowLabel: { ...tokens.typography.body, color: tokens.neutral.textPrimary, flex: 1 },
 

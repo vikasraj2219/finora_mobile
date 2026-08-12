@@ -238,20 +238,16 @@ const TransactionsScreen = () => {
                     )}
                   </View>
                 )}
-                <FinoraCard padded={false}>
-                  {group.items.map((t, i) => (
-                    <View key={t._id}>
-                      {i > 0 && <View style={styles.divider} />}
-                      <TransactionRow
-                        transaction={t}
-                        index={i}
-                        onPress={() => { setEditing(t); setDialogOpen(true); }}
-                        onDelete={() => setDeleteTarget(t)}
-                        onReceiptPress={() => setReceiptTarget(t)}
-                      />
-                    </View>
-                  ))}
-                </FinoraCard>
+                {group.items.map((t, i) => (
+                  <TransactionRow
+                    key={t._id}
+                    transaction={t}
+                    index={i}
+                    onPress={() => { setEditing(t); setDialogOpen(true); }}
+                    onDelete={() => setDeleteTarget(t)}
+                    onReceiptPress={() => setReceiptTarget(t)}
+                  />
+                ))}
               </View>
             );
           })
@@ -339,7 +335,6 @@ const styles = StyleSheet.create({
   groupLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, marginLeft: 2, marginRight: 2 },
   groupLabel: { ...tokens.typography.label, color: tokens.neutral.textMuted },
   groupNet: { ...tokens.typography.caption, fontWeight: '700' },
-  divider: { height: 1, backgroundColor: tokens.neutral.border, marginLeft: 63 },
 
   pagination: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
   pageLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textMuted },
