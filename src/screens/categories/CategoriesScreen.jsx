@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import FinoraCard from '../../components/ui/FinoraCard';
 import FinoraEmptyState from '../../components/ui/FinoraEmptyState';
@@ -13,6 +15,7 @@ import { listCategories, createCategory, updateCategory, deleteCategory } from '
 import { listTypes } from '../../api/typeApi';
 import { listSubcategories } from '../../api/subcategoryApi';
 import { getCategoryBreakdown } from '../../api/dashboardApi';
+import { formatCurrency } from '../../utils/formatters';
 import tokens from '../../theme/tokens';
 
 // Redesigned per brief §10 — spending-aware category cards instead of a flat
@@ -104,7 +107,17 @@ const CategoriesScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Categories</Text>
+        <View>
+          <Text style={styles.pageTitle}>Categories</Text>
+          {categories.length > 0 && (
+            <View style={styles.headerTotalRow}>
+              <MaterialCommunityIcons name="chart-donut" size={13} color={tokens.neutral.textMuted} />
+              <Text style={styles.headerTotal}>
+                {formatCurrency(Object.values(breakdown).reduce((sum, b) => sum + (b.total || 0), 0))} this month
+              </Text>
+            </View>
+          )}
+        </View>
         <Pressable style={styles.addBtn} onPress={() => { setEditing(null); setDialogOpen(true); }}>
           <Text style={styles.addBtnText}>+ Add</Text>
         </Pressable>
@@ -137,19 +150,20 @@ const CategoriesScreen = () => {
             />
           </FinoraCard>
         ) : (
-          categories.map((cat) => (
-            <CategoryCard
-              key={cat._id}
-              icon={cat.icon || 'shape-outline'}
-              color={cat.color}
-              name={cat.name}
-              subcategoryCount={subCounts[cat._id] ?? 0}
-              monthTotal={breakdown[cat._id]?.total || 0}
-              percentage={breakdown[cat._id]?.percentage}
-              isDefault={cat.isDefault}
-              onPress={() => navigation.navigate('Subcategories', { categoryId: cat._id })}
-              onMenuPress={() => setActionTarget(cat)}
-            />
+          categories.map((cat, i) => (
+            <Animated.View key={cat._id} entering={FadeInDown.delay(Math.min(i, 8) * 45).duration(280)}>
+              <CategoryCard
+                icon={cat.icon || 'shape-outline'}
+                color={cat.color}
+                name={cat.name}
+                subcategoryCount={subCounts[cat._id] ?? 0}
+                monthTotal={breakdown[cat._id]?.total || 0}
+                percentage={breakdown[cat._id]?.percentage}
+                isDefault={cat.isDefault}
+                onPress={() => navigation.navigate('Subcategories', { categoryId: cat._id })}
+                onMenuPress={() => setActionTarget(cat)}
+              />
+            </Animated.View>
           ))
         )}
       </ScrollView>

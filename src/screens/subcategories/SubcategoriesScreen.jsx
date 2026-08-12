@@ -3,6 +3,7 @@ import { useFocusEffect, useRoute } from '@react-navigation/native';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { Swipeable } from 'react-native-gesture-handler';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import FinoraCard from '../../components/ui/FinoraCard';
@@ -205,30 +206,33 @@ const SubcategoriesScreen = () => {
             />
           </FinoraCard>
         ) : (
-          <FinoraCard padded={false}>
-            {subcategories.map((s, i) => (
-              <View key={s._id}>
-                {i > 0 && <View style={styles.divider} />}
-                <Swipeable
-                  overshootRight={false}
-                  renderRightActions={() => (
-                    <Pressable onPress={() => setDeleteTarget(s)} style={styles.deleteAction}>
-                      <MaterialCommunityIcons name="trash-can-outline" size={19} color="#fff" />
-                    </Pressable>
-                  )}
-                >
+          subcategories.map((s, i) => (
+            <Animated.View key={s._id} entering={FadeInDown.delay(Math.min(i, 8) * 45).duration(280)} style={styles.subCardWrap}>
+              <Swipeable
+                overshootRight={false}
+                renderRightActions={() => (
+                  <Pressable onPress={() => setDeleteTarget(s)} style={styles.deleteAction}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={19} color="#fff" />
+                  </Pressable>
+                )}
+              >
+                <FinoraCard style={styles.subCard} padded={false}>
                   <Pressable style={styles.subRow} onPress={() => { setEditing(s); setFormOpen(true); }}>
                     <View style={[styles.subIconWrap, { backgroundColor: `${selectedCategory?.color || tokens.brand.ink800}17` }]}>
-                      <MaterialCommunityIcons name={s.icon || 'shape-outline'} size={17} color={selectedCategory?.color || tokens.brand.ink800} />
+                      <MaterialCommunityIcons name={s.icon || 'shape-outline'} size={18} color={selectedCategory?.color || tokens.brand.ink800} />
                     </View>
-                    <Text style={styles.subName}>{s.name}</Text>
-                    {s.isDefault && <Text style={styles.defaultTag}>Default</Text>}
+                    <Text style={styles.subName} numberOfLines={1}>{s.name}</Text>
+                    {s.isDefault && (
+                      <View style={styles.defaultTag}>
+                        <Text style={styles.defaultTagText}>Default</Text>
+                      </View>
+                    )}
                     <MaterialCommunityIcons name="chevron-right" size={18} color={tokens.neutral.textMuted} />
                   </Pressable>
-                </Swipeable>
-              </View>
-            ))}
-          </FinoraCard>
+                </FinoraCard>
+              </Swipeable>
+            </Animated.View>
+          ))
         )}
       </ScrollView>
 
@@ -276,12 +280,14 @@ const styles = StyleSheet.create({
   switcherRowLabel: { ...tokens.typography.body, color: tokens.neutral.textPrimary, flex: 1 },
 
   content: { padding: tokens.space.lg, paddingBottom: 96 },
-  divider: { height: 1, backgroundColor: tokens.neutral.border, marginLeft: 62 },
-  subRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: tokens.space.md, backgroundColor: tokens.neutral.surface },
-  subIconWrap: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  subCardWrap: { marginBottom: 10 },
+  subCard: {},
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: tokens.space.md },
+  subIconWrap: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   subName: { ...tokens.typography.body, fontWeight: '600', color: tokens.neutral.textPrimary, flex: 1 },
-  defaultTag: { ...tokens.typography.caption, color: tokens.neutral.textMuted, marginRight: 4 },
-  deleteAction: { backgroundColor: tokens.semantic.error, justifyContent: 'center', alignItems: 'center', width: 64 },
+  defaultTag: { backgroundColor: tokens.neutral.surfaceAlt, paddingHorizontal: 8, paddingVertical: 3, borderRadius: tokens.radius.pill, marginRight: 2 },
+  defaultTagText: { fontSize: 10, fontWeight: '700', color: tokens.neutral.textMuted },
+  deleteAction: { backgroundColor: tokens.semantic.error, justifyContent: 'center', alignItems: 'center', width: 64, borderRadius: tokens.radius.lg, marginLeft: 8 },
 
   fab: { position: 'absolute', right: 20, bottom: 24, width: 52, height: 52, borderRadius: 26, backgroundColor: tokens.brand.ink800, alignItems: 'center', justifyContent: 'center', ...tokens.shadow.high },
 });

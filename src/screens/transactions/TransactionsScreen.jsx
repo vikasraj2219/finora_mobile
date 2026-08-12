@@ -9,24 +9,27 @@ import FinoraCard from '../../components/ui/FinoraCard';
 import FinoraChip from '../../components/ui/FinoraChip';
 import FinoraEmptyState from '../../components/ui/FinoraEmptyState';
 import FinoraButton from '../../components/ui/FinoraButton';
+import FinoraStatStrip from '../../components/ui/FinoraStatStrip';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import TransactionFormDialog from '../../components/transactions/TransactionFormDialog';
 import TransactionFilterSheet from '../../components/transactions/TransactionFilterSheet';
 import TransactionRow from '../../components/transactions/TransactionRow';
 import ReceiptDialog from '../../components/transactions/ReceiptDialog';
 import groupByDate from '../../utils/groupByDate';
+import { formatCurrency } from '../../utils/formatters';
 import tokens from '../../theme/tokens';
 
 import { listTransactions, createTransaction, updateTransaction, deleteTransaction } from '../../api/transactionApi';
 import { listCategories } from '../../api/categoryApi';
 import { listBankAccounts } from '../../api/bankAccountApi';
 import { listUpiAccounts } from '../../api/upiAccountApi';
+import { getDashboardSummary } from '../../api/dashboardApi';
 
 const TYPE_TABS = [
-  { value: '', label: 'All' },
-  { value: 'income', label: 'Income' },
-  { value: 'expense', label: 'Expense' },
-  { value: 'transfer', label: 'Transfer' },
+  { value: '', label: 'All', icon: 'view-grid-outline' },
+  { value: 'income', label: 'Income', icon: 'arrow-bottom-left' },
+  { value: 'expense', label: 'Expense', icon: 'arrow-top-right' },
+  { value: 'transfer', label: 'Transfer', icon: 'swap-horizontal' },
 ];
 
 // Redesigned per brief §8: sticky search + filter header, type tabs, date-
@@ -44,6 +47,7 @@ const TransactionsScreen = () => {
   const [categories, setCategories] = useState([]);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [upiAccounts, setUpiAccounts] = useState([]);
+  const [summary, setSummary] = useState(null);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -62,6 +66,17 @@ const TransactionsScreen = () => {
     setUpiAccounts(upiRes.data.data.items);
   }, []);
 
+  // Best-effort — the stat strip is a nice-to-have, so a failure here should
+  // never block or blank the transaction list itself.
+  const loadSummary = useCallback(async () => {
+    try {
+      const { data } = await getDashboardSummary();
+      setSummary(data.data);
+    } catch (err) {
+      setSummary(null);
+    }
+  }, []);
+
   const loadTransactions = useCallback(async () => {
     const { data } = await listTransactions(filters);
     setRows(data.data.items);
@@ -71,6 +86,7 @@ const TransactionsScreen = () => {
   useFocusEffect(
     useCallback(() => {
       setLoadError(null);
+      loadSummary();
       Promise.all([loadLookups(), loadTransactions()])
         .catch((err) => {
           setLoadError(err?.response?.data?.message || err?.message || 'Failed to load transactions');
@@ -164,6 +180,12 @@ const TransactionsScreen = () => {
               onPress={() => setFilters((f) => ({ ...f, type: tab.value || undefined, page: 1 }))}
               style={[styles.tab, (filters.type || '') === tab.value && styles.tabActive]}
             >
+              <MaterialCommunityIcons
+                name={tab.icon}
+                size={14}
+                color={(filters.type || '') === tab.value ? '#fff' : tokens.neutral.textSecondary}
+                style={{ marginRight: 5 }}
+              />
               <Text style={[styles.tabLabel, (filters.type || '') === tab.value && styles.tabLabelActive]}>{tab.label}</Text>
             </Pressable>
           ))}
@@ -174,6 +196,12 @@ const TransactionsScreen = () => {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[tokens.brand.teal500]} />}
       >
+        {summary && !loadError && (
+          <View style={{ marginBottom: tokens.space.lg }}>
+            <FinoraStatStrip income={summary.monthlyIncome} expense={summary.monthlyExpense} />
+          </View>
+        )}
+
         {loadError ? (
           <FinoraCard>
             <FinoraEmptyState
@@ -195,24 +223,38 @@ const TransactionsScreen = () => {
             />
           </FinoraCard>
         ) : (
-          groups.map((group, gi) => (
-            <View key={group.label || gi} style={styles.group}>
-              {group.label && <Text style={styles.groupLabel}>{group.label}</Text>}
-              <FinoraCard padded={false}>
-                {group.items.map((t, i) => (
-                  <View key={t._id}>
-                    {i > 0 && <View style={styles.divider} />}
-                    <TransactionRow
-                      transaction={t}
-                      onPress={() => { setEditing(t); setDialogOpen(true); }}
-                      onDelete={() => setDeleteTarget(t)}
-                      onReceiptPress={() => setReceiptTarget(t)}
-                    />
+          groups.map((group, gi) => {
+            const groupNet = group.items.reduce((sum, t) => sum + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+            return (
+              <View key={group.label || gi} style={styles.group}>
+                {group.label && (
+                  <View style={styles.groupLabelRow}>
+                    <Text style={styles.groupLabel}>{group.label}</Text>
+                    {groupNet !== 0 && (
+                      <Text style={[styles.groupNet, { color: groupNet > 0 ? tokens.semantic.income : tokens.semantic.expense }]}>
+                        {groupNet > 0 ? '+' : '-'}
+                        {formatCurrency(Math.abs(groupNet))}
+                      </Text>
+                    )}
                   </View>
-                ))}
-              </FinoraCard>
-            </View>
-          ))
+                )}
+                <FinoraCard padded={false}>
+                  {group.items.map((t, i) => (
+                    <View key={t._id}>
+                      {i > 0 && <View style={styles.divider} />}
+                      <TransactionRow
+                        transaction={t}
+                        index={i}
+                        onPress={() => { setEditing(t); setDialogOpen(true); }}
+                        onDelete={() => setDeleteTarget(t)}
+                        onReceiptPress={() => setReceiptTarget(t)}
+                      />
+                    </View>
+                  ))}
+                </FinoraCard>
+              </View>
+            );
+          })
         )}
 
         {rows.length > 0 && (
@@ -287,15 +329,17 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, paddingVertical: 9, color: tokens.neutral.textPrimary, fontSize: 14 },
 
   tabsRow: { flexGrow: 0, marginBottom: tokens.space.sm },
-  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: tokens.radius.pill, backgroundColor: tokens.neutral.surfaceAlt, marginRight: 8 },
+  tab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 7, borderRadius: tokens.radius.pill, backgroundColor: tokens.neutral.surfaceAlt, marginRight: 8 },
   tabActive: { backgroundColor: tokens.brand.ink800 },
   tabLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textSecondary, fontWeight: '600' },
   tabLabelActive: { color: '#fff' },
 
   content: { padding: tokens.space.lg, paddingBottom: 100 },
   group: { marginBottom: tokens.space.lg },
-  groupLabel: { ...tokens.typography.label, color: tokens.neutral.textMuted, marginBottom: 8, marginLeft: 2 },
-  divider: { height: 1, backgroundColor: tokens.neutral.border, marginLeft: 60 },
+  groupLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, marginLeft: 2, marginRight: 2 },
+  groupLabel: { ...tokens.typography.label, color: tokens.neutral.textMuted },
+  groupNet: { ...tokens.typography.caption, fontWeight: '700' },
+  divider: { height: 1, backgroundColor: tokens.neutral.border, marginLeft: 63 },
 
   pagination: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
   pageLabel: { ...tokens.typography.bodySm, color: tokens.neutral.textMuted },
