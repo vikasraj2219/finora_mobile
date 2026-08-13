@@ -121,6 +121,7 @@ const ImportsScreen = () => {
         importBatchId,
         rows: rows.map((r) => ({
           include: r.include,
+          isDuplicate: r.isDuplicate,
           date: r.date,
           type: r.type,
           amount: r.amount,
@@ -281,7 +282,11 @@ const ImportsScreen = () => {
             <Text variant="bodyMedium" style={{ color: '#64748B', textAlign: 'center', marginBottom: 20 }}>
               {summary.created} transaction{summary.created === 1 ? '' : 's'} added
               {summary.unallocated > 0 ? ` (${summary.unallocated} need${summary.unallocated === 1 ? 's' : ''} allocation)` : ''}
-              {summary.skipped > 0 ? `, ${summary.skipped} row${summary.skipped === 1 ? '' : 's'} not imported` : ''}.
+              {summary.skipped > 0 ? `, ${summary.skipped} row${summary.skipped === 1 ? '' : 's'} not imported` : ''}
+              {summary.duplicatesSkipped > 0
+                ? `, ${summary.duplicatesSkipped} skipped as duplicate${summary.duplicatesSkipped === 1 ? '' : 's'} of an existing transaction`
+                : ''}
+              .
             </Text>
             <Button mode="contained" onPress={startOver}>
               Import Another Statement
