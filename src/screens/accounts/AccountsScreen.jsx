@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ActivityIndicator } from 'react-native-paper';
+import { ActivityIndicator, Snackbar } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import FinoraCard from '../../components/ui/FinoraCard';
@@ -24,6 +24,7 @@ import {
   updateBankAccount,
   toggleBankAccountActive,
   deleteBankAccount,
+  recalculateBankAccountBalance,
 } from '../../api/bankAccountApi';
 import {
   listUpiAccounts,
@@ -57,6 +58,7 @@ const AccountsScreen = () => {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionTarget, setActionTarget] = useState(null); // { type, item }
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState('');
 
   const loadAll = useCallback(async () => {
     const [bankRes, upiRes, cashRes] = await Promise.allSettled([listBankAccounts(), listUpiAccounts(), getCashBalance()]);
@@ -119,6 +121,17 @@ const AccountsScreen = () => {
       loadAll();
     } catch (err) {
       setDeleteTarget(null);
+    }
+  };
+
+  const handleRecalculate = async () => {
+    const target = actionTarget;
+    try {
+      const { data } = await recalculateBankAccountBalance(target.item._id);
+      setSnackbar(`Balance fixed — now ${formatCurrency(data.data.currentBalance, data.data.currency)}`);
+      loadAll();
+    } catch (err) {
+      setSnackbar(err?.response?.data?.message || 'Could not recalculate balance');
     }
   };
 
@@ -268,10 +281,12 @@ const AccountsScreen = () => {
       <AccountActionSheet
         visible={!!actionTarget}
         account={actionTarget?.item}
+        accountType={actionTarget?.type}
         onClose={() => setActionTarget(null)}
         onViewTransactions={() => navigation.navigate('Transactions')}
         onEdit={handleEdit}
         onToggleActive={handleToggleActive}
+        onRecalculate={handleRecalculate}
         onDelete={() => setDeleteTarget(actionTarget)}
       />
 
@@ -302,6 +317,10 @@ const AccountsScreen = () => {
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />
+
+      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={3500}>
+        {snackbar}
+      </Snackbar>
     </SafeAreaView>
   );
 };

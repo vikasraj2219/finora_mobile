@@ -5,12 +5,15 @@ import tokens from '../../theme/tokens';
 
 // Replaces the old dots-menu Menu popup — brief §7 explicitly asks for a
 // bottom sheet for account actions (View / Edit / Archive / Delete).
-const AccountActionSheet = ({ visible, account, onClose, onViewTransactions, onEdit, onToggleActive, onDelete }) => {
+const AccountActionSheet = ({ visible, account, accountType, onClose, onViewTransactions, onEdit, onToggleActive, onRecalculate, onDelete }) => {
   if (!account) return null;
 
   const actions = [
     { key: 'view', label: 'View Transactions', icon: 'swap-horizontal', onPress: onViewTransactions },
     { key: 'edit', label: 'Edit Account', icon: 'pencil-outline', onPress: onEdit },
+    ...(accountType === 'bank'
+      ? [{ key: 'recalculate', label: 'Fix Balance', icon: 'calculator-variant-outline', onPress: onRecalculate }]
+      : []),
     {
       key: 'toggle',
       label: account.isActive ? 'Archive Account' : 'Reactivate Account',
