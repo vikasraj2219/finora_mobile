@@ -46,7 +46,7 @@ const CashAdjustDialog = ({ open, onClose, onSubmit, currentBalance }) => {
                 value={value}
                 onChangeText={onChange}
                 mode="outlined"
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
                 autoFocus
                 error={!!errors.amount}
                 style={styles.input}

@@ -132,7 +132,7 @@ const BankAccountFormDialog = ({ open, onClose, onSubmit, initialValues }) => {
                   value={String(value)}
                   onChangeText={onChange}
                   mode="outlined"
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   disabled={isEdit}
                   style={styles.input}
                 />
